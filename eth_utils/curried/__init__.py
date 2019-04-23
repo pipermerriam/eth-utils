@@ -1,4 +1,5 @@
 # flake8: noqa
+from typing import overload, Any, TypeVar, Callable, Union
 from eth_utils.toolz import curry
 
 from eth_utils import (
@@ -23,7 +24,7 @@ from eth_utils import (
     from_wei,
     function_abi_to_4byte_selector,
     function_signature_to_4byte_selector,
-    hexstr_if_str,
+    hexstr_if_str as _hexstr_if_str,
     humanize_hash,
     humanize_seconds,
     import_string,
@@ -79,7 +80,35 @@ apply_formatters_to_sequence = curry(apply_formatters_to_sequence)
 apply_key_map = curry(apply_key_map)
 apply_one_of_formatters = curry(apply_one_of_formatters)
 from_wei = curry(from_wei)
-hexstr_if_str = curry(hexstr_if_str)
+
+T = TypeVar("T")
+
+
+@overload
+def hexstr_if_str() -> Callable[[Callable[..., T], Union[bytes, int, str]], T]:
+    pass
+
+
+@overload
+def hexstr_if_str(to_type: Callable[..., T]) -> Callable[[Union[bytes, int, str]], T]:
+    pass
+
+
+@overload
+def hexstr_if_str(
+    to_type: Callable[..., T], hexstr_or_primitive: Union[bytes, int, str]
+) -> T:
+    pass
+
+
+def hexstr_if_str(
+    to_type: Callable[..., T], hexstr_or_primitive: Union[bytes, int, str] = None
+) -> T:
+    pass
+
+
+hexstr_if_str = curry(_hexstr_if_str)
+
 is_same_address = curry(is_same_address)
 text_if_str = curry(text_if_str)
 to_wei = curry(to_wei)
