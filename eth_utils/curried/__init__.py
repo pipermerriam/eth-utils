@@ -102,7 +102,7 @@ def hexstr_if_str(
 
 
 def hexstr_if_str(
-    to_type: Callable[..., T], hexstr_or_primitive: Union[bytes, int, str] = None
+    to_type: Callable[..., T] = None, hexstr_or_primitive: Union[bytes, int, str] = None
 ) -> T:
     pass
 

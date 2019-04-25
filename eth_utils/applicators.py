@@ -1,19 +1,22 @@
 import warnings
 
-from typing import Any, Callable, Dict, Generator, List, Tuple
+from typing import Any, Callable, Dict, Iterable, Sequence, Tuple, TypeVar, Union
 
 from .toolz import compose, curry
 from .decorators import return_arg_type
 from .functional import to_dict
 
 
-Formatters = Callable[[List[Any]], List[Any]]
+Formatters = Callable[[Sequence[Any]], Sequence[Any]]
+TItem = TypeVar("TItem")
+TResult = TypeVar("TResult")
+TKey = TypeVar("TKey")
 
 
 @return_arg_type(2)
 def apply_formatter_at_index(
-    formatter: Callable[..., Any], at_index: int, value: List[Any]
-) -> Generator[List[Any], None, None]:
+    formatter: Callable[..., TResult], at_index: int, value: Sequence[TItem]
+) -> Iterable[Union[TResult, TItem]]:
     if at_index + 1 > len(value):
         raise IndexError(
             "Not enough values in iterable to apply formatter.  Got: {0}. "
@@ -26,7 +29,9 @@ def apply_formatter_at_index(
             yield item
 
 
-def combine_argument_formatters(*formatters: List[Callable[..., Any]]) -> Formatters:
+def combine_argument_formatters(
+    *formatters: Sequence[Callable[..., Any]]
+) -> Formatters:
     warnings.warn(
         DeprecationWarning(
             "combine_argument_formatters(formatter1, formatter2)([item1, item2])"
@@ -48,8 +53,8 @@ def combine_argument_formatters(*formatters: List[Callable[..., Any]]) -> Format
 
 @return_arg_type(1)
 def apply_formatters_to_sequence(
-    formatters: List[Any], sequence: List[Any]
-) -> Generator[List[Any], None, None]:
+    formatters: Sequence[Callable[..., Any]], sequence: Sequence[Any]
+) -> Iterable[Any]:
     if len(formatters) > len(sequence):
         raise IndexError(
             "Too many formatters for sequence: {} formatters for {!r}".format(
@@ -68,8 +73,8 @@ def apply_formatters_to_sequence(
 
 
 def apply_formatter_if(
-    condition: Callable[..., Any], formatter: Callable[..., Any], value: Any
-) -> Any:
+    condition: Callable[..., Any], formatter: Callable[..., TResult], value: TItem
+) -> Union[TResult, TItem]:
     if condition(value):
         return formatter(value)
     else:
@@ -78,8 +83,8 @@ def apply_formatter_if(
 
 @to_dict
 def apply_formatters_to_dict(
-    formatters: Dict[Any, Any], value: Dict[Any, Any]
-) -> Generator[Tuple[Any, Any], None, None]:
+    formatters: Dict[TKey, Callable[..., Any]], value: Dict[TKey, Any]
+) -> Iterable[Tuple[TKey, Any]]:
     for key, item in value.items():
         if key in formatters:
             try:
@@ -94,8 +99,8 @@ def apply_formatters_to_dict(
 
 @return_arg_type(1)
 def apply_formatter_to_array(
-    formatter: Callable[..., Any], value: List[Any]
-) -> Generator[List[Any], None, None]:
+    formatter: Callable[[TItem], TResult], value: Iterable[TItem]
+) -> Iterable[TResult]:
     for item in value:
         yield formatter(item)
 
@@ -113,10 +118,13 @@ def apply_one_of_formatters(
         )
 
 
+TNewKey = TypeVar("TNewKey")
+
+
 @to_dict
 def apply_key_map(
-    key_mappings: Dict[Any, Any], value: Dict[Any, Any]
-) -> Generator[Tuple[Any, Any], None, None]:
+    key_mappings: Dict[TKey, TNewKey], value: Dict[Any, TItem]
+) -> Iterable[Tuple[Union[TKey, TNewKey], TItem]]:
     key_conflicts = (
         set(value.keys())
         .difference(key_mappings.keys())
